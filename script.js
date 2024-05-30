@@ -1,4 +1,11 @@
 document.addEventListener("DOMContentLoaded", function () {
+  // this is a store to track previous state of the quantity so we don't get negative values when decreasing
+  let previousQuantities = {
+      1: 0,
+      2: 0,
+      3: 0
+  };
+
   // Function to adjust quantity of items
   function adjustQuantity(item, operation) {
     const quantityElement = item.querySelector(".quantity");
@@ -11,28 +18,34 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     quantityElement.innerText = quantity;
-    updateTotalPrice();
+    updateTotalPrice(item, operation);
   }
 
   // Function to delete item from the cart
   function deleteItem(item) {
+    updateTotalPrice(item, "delete")
     item.remove();
-    updateTotalPrice();
   }
 
   // Function to update total price
-  function updateTotalPrice() {
-    const items = document.querySelectorAll(".card-body");
-    let totalPrice = 0; // Reset totalPrice to 0
-
-    items.forEach(function (item) {
-      const unitPrice = parseFloat(
-        item.querySelector(".unit-price").innerText.replace("$", "")
-      );
-      const quantity = parseInt(item.querySelector(".quantity").innerText);
-      totalPrice += unitPrice * quantity;
-    });
-
+  // pass the item to the update total price so that you dont need to update all items everytime you change one item
+  function updateTotalPrice(item, operation) {
+    // You should fetch the current total price, this way it doesnt always reset to 0
+    let totalPrice = parseFloat(document.querySelector(".total").innerText);
+    
+    const unitPrice = parseFloat(item.querySelector(".unit-price").innerText);
+    const quantity = parseInt(item.querySelector(".quantity").innerText);
+    const id = item.dataset.id;
+    
+    if (operation === 'increase') {
+      totalPrice += unitPrice;
+    } else if (operation === "decrease" && previousQuantities[id] > 0) {
+      totalPrice -= unitPrice;
+    } else if (operation === "delete") {
+      totalPrice -= unitPrice * quantity
+    }
+    
+    previousQuantities[id] = quantity
     document.querySelector(".total").innerText = totalPrice.toFixed(2) + " $";
   }
 
@@ -47,7 +60,7 @@ document.addEventListener("DOMContentLoaded", function () {
   );
   quantityAdjustButtons.forEach(function (button) {
     button.addEventListener("click", function () {
-      const item = button.closest(".card-body");
+      const item = button.closest(".card-body[data-id]");
       const operation = button.classList.contains("fa-plus-circle")
         ? "increase"
         : "decrease";
@@ -71,7 +84,4 @@ document.addEventListener("DOMContentLoaded", function () {
       toggleLike(button);
     });
   });
-
-  // Initial update of total price
-  updateTotalPrice();
 });
